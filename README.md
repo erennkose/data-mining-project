@@ -25,7 +25,7 @@ The classification model is built using a **Random Forest Classifier**, and its 
 
 ## 📊 Dataset Information
 
-- **Source:** Custom dataset derived from **Data in Brief**
+- **Source:** [Dataset of student level prediction in UAE](https://www.sciencedirect.com/science/article/pii/S235234092100192X)
 - **Fields used:**
   - Demographics: `Gender`, `Age`, `Previous Curriculum`
   - Academic scores: `Math20-1`, `Science20-2`, `English20-3`, etc. (9 total exams)
@@ -77,4 +77,19 @@ The classification model is built using a **Random Forest Classifier**, and its 
 ### 1. Clone the repo:
 ```bash
 git clone https://github.com/your-username/student-performance-classification.git
-cd student-performance-classification
+cd student-performance-classification 
+```
+
+### 2. Install required packages:
+```bash
+pip install pandas numpy scikit-learn matplotlib seaborn openpyxl
+```
+
+### 3. Run the model:
+```bash
+python src/main.py
+```
+
+---
+## 💻 Author
+- Eren KÖSE - Computer Engineering, 3rd year
