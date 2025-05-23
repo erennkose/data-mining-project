@@ -10,11 +10,13 @@ from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Veri yükleme ve hazırlık (önceki koddan aynen alındı)
+# ==============================================
+# 🔢 VERİ YÜKLEME VE TEMİZLEME
+# ==============================================
+
 df = pd.read_excel("dataset for mendeley 181220.xlsx")
 df.columns = df.columns.str.strip().str.replace("'", "", regex=False).str.replace('"', "", regex=False)
 
-# Kullanılan sütunlar
 required_columns = [
     'Gender',
     'Age as of Academic Year 17/18',
@@ -25,7 +27,6 @@ required_columns = [
 ]
 df = df[required_columns].dropna()
 
-# Ortalama ve seviye
 exam_cols = [col for col in df.columns if "Math" in col or "Science" in col or "English" in col]
 df['ExamAverage'] = df[exam_cols].mean(axis=1)
 
@@ -39,46 +40,88 @@ def get_placement_level(avg):
 
 df['PlacementLevel'] = df['ExamAverage'].apply(get_placement_level)
 
-# Özellikler ve hedef
+# ==============================================
+# 📊 VERİ MADENCİLİĞİ GÖRSELLEŞTİRME (EDA)
+# ==============================================
+
+# Sınıf dağılımı
+plt.figure(figsize=(6, 4))
+sns.countplot(data=df, x='PlacementLevel', order=['Low', 'Medium', 'High'], palette='Set2')
+plt.title("PlacementLevel Sınıf Dağılımı")
+plt.tight_layout()
+plt.show()
+
+# Ortalama notların dağılımı
+plt.figure(figsize=(6, 4))
+sns.histplot(df['ExamAverage'], kde=True, bins=20, color='skyblue')
+plt.title("ExamAverage Dağılımı")
+plt.tight_layout()
+plt.show()
+
+# Cinsiyete göre box plot
+plt.figure(figsize=(6, 4))
+sns.boxplot(data=df, x='Gender', y='ExamAverage', palette='pastel')
+plt.title("Cinsiyete Göre Ortalama Notlar")
+plt.tight_layout()
+plt.show()
+
+# Müfredata göre box plot
+plt.figure(figsize=(8, 4))
+sns.boxplot(data=df, x='Previous Curriculum (17/18)2', y='ExamAverage', palette='muted')
+plt.title("Müfredata Göre Ortalama Notlar")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Korelasyon matrisi
+plt.figure(figsize=(10, 8))
+corr = df.select_dtypes(include='number').corr()
+sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', square=True)
+plt.title("Sayısal Özellikler Arası Korelasyon Matrisi")
+plt.tight_layout()
+plt.show()
+
+# ==============================================
+# 🎯 MODELLEME – RANDOM FOREST
+# ==============================================
+
 X = df.drop(['ExamAverage', 'PlacementLevel'], axis=1)
 y = df['PlacementLevel']
-
-# Kategorik verileri kodla
 X = pd.get_dummies(X, columns=['Gender', 'Previous Curriculum (17/18)2'], drop_first=True)
 
-# Train (70%) + temp (30%) ayırımı
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
-
-# Temp'ten validation (10%) ve test (20%) ayırımı
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=2/3, random_state=42, stratify=y_temp)
 
-# Sınıflar
 class_names = np.unique(y)
-
-# Sonuçları tutmak için liste
 results = []
-
-# Test edilecek farklı ağaç sayıları
 n_trees_list = [50, 100, 200, 500]
 
 for n in n_trees_list:
     print(f"\n=== Random Forest (n_estimators={n}) ===")
-    model = RandomForestClassifier(n_estimators=n, random_state=42)
+    model = RandomForestClassifier(
+        n_estimators=n,
+        criterion='entropy',
+        max_depth=10,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        max_features='sqrt',
+        bootstrap=True,
+        n_jobs=-1,
+        random_state=42
+    )
     model.fit(X_train, y_train)
 
-    # Tahminler
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)
     y_test_bin = label_binarize(y_test, classes=class_names)
 
-    # Metrikler
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred, average='macro')
     recall = recall_score(y_test, y_pred, average='macro')
     f1 = f1_score(y_test, y_pred, average='macro')
     auc = roc_auc_score(y_test_bin, y_prob, average='macro', multi_class='ovr')
 
-    # Confusion Matrix
+    # Confusion matrix
     cm = confusion_matrix(y_test, y_pred, labels=class_names)
     sns.heatmap(cm, annot=True, fmt='d', xticklabels=class_names, yticklabels=class_names, cmap='Blues')
     plt.title(f"Confusion Matrix (RFC{n})")
@@ -87,12 +130,11 @@ for n in n_trees_list:
     plt.tight_layout()
     plt.show()
 
-    # ROC Eğrisi
+    # ROC eğrisi
     plt.figure(figsize=(8, 5))
     for i, class_label in enumerate(class_names):
         fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_prob[:, i])
         plt.plot(fpr, tpr, label=f'{class_label} (AUC={roc_auc_score(y_test_bin[:, i], y_prob[:, i]):.2f})')
-
     plt.plot([0, 1], [0, 1], 'k--')
     plt.title(f"ROC Curve (RFC{n})")
     plt.xlabel("False Positive Rate")
@@ -101,7 +143,6 @@ for n in n_trees_list:
     plt.tight_layout()
     plt.show()
 
-    # Sonuçları kaydet
     results.append({
         'n_estimators': n,
         'Accuracy': acc,
@@ -111,7 +152,10 @@ for n in n_trees_list:
         'AUC': auc
     })
 
-# Sonuçları tablo halinde yazdır
+# ==============================================
+# 📋 SONUÇ ÖZETİ
+# ==============================================
+
 print("\n=== RFC Sonuç Özeti ===")
 results_df = pd.DataFrame(results)
 print(results_df)
