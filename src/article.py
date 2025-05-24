@@ -44,28 +44,24 @@ df['PlacementLevel'] = df['ExamAverage'].apply(get_placement_level)
 # 📊 VERİ MADENCİLİĞİ GÖRSELLEŞTİRME (EDA)
 # ==============================================
 
-# Sınıf dağılımı
 plt.figure(figsize=(6, 4))
 sns.countplot(data=df, x='PlacementLevel', order=['Low', 'Medium', 'High'], palette='Set2')
 plt.title("PlacementLevel Sınıf Dağılımı")
 plt.tight_layout()
 plt.show()
 
-# Ortalama notların dağılımı
 plt.figure(figsize=(6, 4))
 sns.histplot(df['ExamAverage'], kde=True, bins=20, color='skyblue')
 plt.title("ExamAverage Dağılımı")
 plt.tight_layout()
 plt.show()
 
-# Cinsiyete göre box plot
 plt.figure(figsize=(6, 4))
 sns.boxplot(data=df, x='Gender', y='ExamAverage', palette='pastel')
 plt.title("Cinsiyete Göre Ortalama Notlar")
 plt.tight_layout()
 plt.show()
 
-# Müfredata göre box plot
 plt.figure(figsize=(8, 4))
 sns.boxplot(data=df, x='Previous Curriculum (17/18)2', y='ExamAverage', palette='muted')
 plt.title("Müfredata Göre Ortalama Notlar")
@@ -73,7 +69,6 @@ plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
 
-# Korelasyon matrisi
 plt.figure(figsize=(10, 8))
 corr = df.select_dtypes(include='number').corr()
 sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', square=True)
@@ -111,17 +106,23 @@ for n in n_trees_list:
     )
     model.fit(X_train, y_train)
 
+    # --- Tahminler ---
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)
     y_test_bin = label_binarize(y_test, classes=class_names)
 
+    y_train_pred = model.predict(X_train)
+    y_train_prob = model.predict_proba(X_train)
+    y_train_bin = label_binarize(y_train, classes=class_names)
+
+    # --- Metrikler ---
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred, average='macro')
     recall = recall_score(y_test, y_pred, average='macro')
     f1 = f1_score(y_test, y_pred, average='macro')
     auc = roc_auc_score(y_test_bin, y_prob, average='macro', multi_class='ovr')
 
-    # Confusion matrix
+    # --- Confusion Matrix ---
     cm = confusion_matrix(y_test, y_pred, labels=class_names)
     sns.heatmap(cm, annot=True, fmt='d', xticklabels=class_names, yticklabels=class_names, cmap='Blues')
     plt.title(f"Confusion Matrix (RFC{n})")
@@ -130,19 +131,26 @@ for n in n_trees_list:
     plt.tight_layout()
     plt.show()
 
-    # ROC eğrisi
-    plt.figure(figsize=(8, 5))
+    # --- ROC Eğrileri ---
+    fig, axs = plt.subplots(1, 2, figsize=(14, 5))
+
     for i, class_label in enumerate(class_names):
-        fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_prob[:, i])
-        plt.plot(fpr, tpr, label=f'{class_label} (AUC={roc_auc_score(y_test_bin[:, i], y_prob[:, i]):.2f})')
-    plt.plot([0, 1], [0, 1], 'k--')
-    plt.title(f"ROC Curve (RFC{n})")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.legend()
+        fpr_test, tpr_test, _ = roc_curve(y_test_bin[:, i], y_prob[:, i])
+        fpr_train, tpr_train, _ = roc_curve(y_train_bin[:, i], y_train_prob[:, i])
+        axs[0].plot(fpr_train, tpr_train, label=f'{class_label} (Train AUC={roc_auc_score(y_train_bin[:, i], y_train_prob[:, i]):.2f})')
+        axs[1].plot(fpr_test, tpr_test, label=f'{class_label} (Test AUC={roc_auc_score(y_test_bin[:, i], y_prob[:, i]):.2f})')
+
+    axs[0].plot([0, 1], [0, 1], 'k--'); axs[1].plot([0, 1], [0, 1], 'k--')
+    axs[0].set_title(f"Train ROC Curve (RFC{n})")
+    axs[1].set_title(f"Test ROC Curve (RFC{n})")
+    for ax in axs:
+        ax.set_xlabel("False Positive Rate")
+        ax.set_ylabel("True Positive Rate")
+        ax.legend()
     plt.tight_layout()
     plt.show()
 
+    # --- Sonuçları Kaydet ---
     results.append({
         'n_estimators': n,
         'Accuracy': acc,
@@ -153,9 +161,27 @@ for n in n_trees_list:
     })
 
 # ==============================================
-# 📋 SONUÇ ÖZETİ
+# 📋 SONUÇ ÖZETİ – TABLO
 # ==============================================
 
 print("\n=== RFC Sonuç Özeti ===")
 results_df = pd.DataFrame(results)
 print(results_df)
+
+# ==============================================
+# 📈 SONUÇ ÖZETİ – GÖRSELLEŞTİRME
+# ==============================================
+
+metrics = ['Accuracy', 'Precision', 'Recall (Sensitivity)', 'F1-Score', 'AUC']
+plt.figure(figsize=(10, 6))
+for metric in metrics:
+    plt.plot(results_df['n_estimators'], results_df[metric], marker='o', label=metric)
+
+plt.title("Random Forest Performans Metrikleri (Test Seti)")
+plt.xlabel("n_estimators")
+plt.ylabel("Değer")
+plt.xticks(results_df['n_estimators'])
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
