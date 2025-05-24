@@ -122,6 +122,16 @@ for n in n_trees_list:
     f1 = f1_score(y_test, y_pred, average='macro')
     auc = roc_auc_score(y_test_bin, y_prob, average='macro', multi_class='ovr')
 
+    # --- Specificity Hesaplama ---
+    specificities = []
+    for label in class_names:
+        binary_y_test = (y_test == label).astype(int)
+        binary_y_pred = (y_pred == label).astype(int)
+        tn, fp, fn, tp = confusion_matrix(binary_y_test, binary_y_pred).ravel()
+        specificity = tn / (tn + fp) if (tn + fp) != 0 else 0
+        specificities.append(specificity)
+    specificity_macro = np.mean(specificities)
+
     # --- Confusion Matrix ---
     cm = confusion_matrix(y_test, y_pred, labels=class_names)
     sns.heatmap(cm, annot=True, fmt='d', xticklabels=class_names, yticklabels=class_names, cmap='Blues')
@@ -157,7 +167,8 @@ for n in n_trees_list:
         'Precision': prec,
         'Recall (Sensitivity)': recall,
         'F1-Score': f1,
-        'AUC': auc
+        'AUC': auc,
+        'Specificity': specificity_macro
     })
 
 # ==============================================
@@ -172,7 +183,7 @@ print(results_df)
 # 📈 SONUÇ ÖZETİ – GÖRSELLEŞTİRME
 # ==============================================
 
-metrics = ['Accuracy', 'Precision', 'Recall (Sensitivity)', 'F1-Score', 'AUC']
+metrics = ['Accuracy', 'Precision', 'Recall (Sensitivity)', 'F1-Score', 'AUC', 'Specificity']
 plt.figure(figsize=(10, 6))
 for metric in metrics:
     plt.plot(results_df['n_estimators'], results_df[metric], marker='o', label=metric)
