@@ -203,3 +203,22 @@ for i, v in enumerate(metrics.values()):
 plt.xticks(rotation=30)
 plt.tight_layout()
 plt.show()
+
+# ==============================================
+# ÖZNİTELİK ÖNEMİ GÖRSELLEŞTİRME (FEATURE IMPORTANCE)
+# ==============================================
+
+importances = best_model.feature_importances_
+feature_names = X.columns
+feature_importance_df = pd.DataFrame({
+    'Feature': feature_names,
+    'Importance': importances
+}).sort_values(by='Importance', ascending=False)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(data=feature_importance_df.head(50), x='Importance', y='Feature', palette='mako')
+plt.title("Öznitelik Önem Sıralamaları(Random Forest)")
+plt.xlabel("Önem Skoru")
+plt.ylabel("Öznitelik")
+plt.tight_layout()
+plt.show()
