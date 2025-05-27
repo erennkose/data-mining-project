@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ==============================================
-# 🔢 VERİ YÜKLEME VE TEMİZLEME
+# VERİ YÜKLEME VE TEMİZLEME
 # ==============================================
 
 df = pd.read_excel("dataset for mendeley 181220.xlsx")
@@ -41,7 +41,7 @@ def get_placement_level(avg):
 df['PlacementLevel'] = df['ExamAverage'].apply(get_placement_level)
 
 # ==============================================
-# 📊 VERİ MADENCİLİĞİ GÖRSELLEŞTİRME (EDA)
+# VERİ MADENCİLİĞİ GÖRSELLEŞTİRME (EDA)
 # ==============================================
 
 plt.figure(figsize=(6, 4))
@@ -77,7 +77,7 @@ plt.tight_layout()
 plt.show()
 
 # ==============================================
-# 🎯 MODELLEME – RANDOM FOREST
+# MODELLEME – RANDOM FOREST
 # ==============================================
 
 X = df.drop(['ExamAverage', 'PlacementLevel'], axis=1)
@@ -90,7 +90,7 @@ X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=2/3, r
 class_names = np.unique(y)
 
 # ===============================
-# 🔍 EN İYİ RFC PARAMETRELERİNİ BUL (GRID SEARCH)
+# EN İYİ RFC PARAMETRELERİNİ BUL (GRID SEARCH)
 # ===============================
 
 param_grid = {
@@ -118,7 +118,7 @@ best_params = grid_search.best_params_
 print(best_params)
 
 # ===============================
-# 🏆 EN İYİ MODEL İLE EĞİTİM VE TEST
+# EN İYİ MODEL İLE EĞİTİM VE TEST
 # ===============================
 
 best_model = grid_search.best_estimator_
@@ -181,7 +181,7 @@ plt.tight_layout()
 plt.show()
 
 # ==============================================
-# 📈 PERFORMANS METRİKLERİ GÖRSELLEŞTİRME
+# PERFORMANS METRİKLERİ GÖRSELLEŞTİRME
 # ==============================================
 
 metrics = {
