@@ -177,7 +177,7 @@ y_train_bin = label_binarize(y_train, classes=class_names)
 acc = accuracy_score(y_test, y_pred)                              # Doğruluk
 prec = precision_score(y_test, y_pred, average='macro')           # Kesinlik
 recall = recall_score(y_test, y_pred, average='macro')            # Duyarlılık (Sensitivity)
-f1 = f1_score(y_test, y_pred, average='macro')                   # F1 Skoru
+f1 = f1_score(y_test, y_pred, average='macro')                    # F1 Skoru
 auc = roc_auc_score(y_test_bin, y_prob, average='macro', multi_class='ovr')  # AUC
 
 # Specificity (Özgüllük) hesaplıyoruz - her sınıf için ayrı ayrı
