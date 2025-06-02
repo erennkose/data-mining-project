@@ -108,7 +108,7 @@ plt.show()
 X = df.drop(['ExamAverage', 'PlacementLevel'], axis=1)  # ExamAverage ve PlacementLevel'ı çıkarıyoruz
 y = df['PlacementLevel']  # Tahmin etmek istediğimiz değişken
 
-# Kategorik değişkenleri dummy değişkenlere çeviriyoruz
+# Kategorik değişkenleri one-hot encoding değişkenlere çeviriyoruz
 X = pd.get_dummies(X, columns=['Gender', 'Previous Curriculum (17/18)2'], drop_first=True)
 
 # Veriyi eğitim (%70), doğrulama (%10) ve test (%20) olarak ayırıyoruz
